@@ -1,5 +1,5 @@
 import pandas as pd 
-from sklearn.datasets import load_digits
+from sklearn.datasets import fetch_openml
 from matplotlib import pyplot as plt
 import numpy as np
 from sklearn.preprocessing import StandardScaler
@@ -34,46 +34,54 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.decomposition import PCA
 
 
-# Load the dataset using the load digits function
-dataset = load_digits()
-keys = dataset.keys()
+# Carregar MNIST via OpenML (mais completo que load_digits)
+print("\nBuscando MNIST (OpenML) — caso não esteja em cache, será baixado...")
+mnist = fetch_openml('mnist_784', version=1, as_frame=False)
+keys = list(mnist.keys()) if hasattr(mnist, 'keys') else []
 
-# Dataset keys
 print("\nDataset keys: ", keys)
 
-# The amount of samples that have in database plus the amount of columns each sample have
-shape = dataset.data.shape
-print("\nShape: ", shape)
+# X e y completos, mas usaremos subset para testes rápidos
+# Carrega todas as imagens (N×784) do MNIST na variável X_all
+X_all = mnist.data
+# Carrega todos os rótulos e garante que sejam inteiros (0-9)
+y_all = mnist.target.astype(int)
+# Limite máximo de amostras a usar para testes (evita usar todo o dataset por padrão)
+max_samples = 5000
+# Garante que não tentemos usar mais amostras do que o dataset possui
+num_samples = min(max_samples, X_all.shape[0])
+# Seleciona as primeiras num_samples amostras para X (subconjunto para testes)
+X = X_all[:num_samples]
+# Seleciona os rótulos correspondentes ao subconjunto
+y = y_all[:num_samples]
+# Mostra a forma do subconjunto (num_samples, 784)
+print("\nShape (subset):", X.shape)
 
-# First sample of the dataset
-first_sample = dataset.data[0]
-print("\nFirst sample: \n", first_sample)
+# First sample flattened
+first_sample = X[0]
+print("\nFirst sample (flattened 784): \n", first_sample)
 
 # Converting into two dimensional array to be able to visualize using matplot library
 
-# O método .reshape(8,8) é utilizado para alterar a forma (dimensões) de um array sem 
-# modificar os dados originais. No seu exemplo, dataset.data[0] é um array 1D com 
-# 64 elementos (representando os pixels de uma imagem 8x8). O reshape(8,8) transforma 
-# esse array 1D em uma matriz 2D com 8 linhas e 8 colunas, permitindo a visualização 
-# da imagem correspondente.
-reshaped_data = dataset.data[0].reshape(8,8)
+# O método .reshape(28,28) é utilizado para transformar o vetor 784 em uma imagem 2D.
+reshaped_data = first_sample.reshape(28,28)
 print("\nReshaped data: \n", reshaped_data)
 
 # Showing the first image from the reshaped data
 print("\nFirst image showed.")
-reshaped_first_sample = first_sample.reshape(8,8)
+reshaped_first_sample = first_sample.reshape(28,28)
 plt.figure(figsize=(4,4))
 plt.imshow(reshaped_first_sample, cmap='gray', interpolation='nearest')
-plt.title(f'Dígito: {dataset.target[0]}')
+plt.title(f'Dígito: {y[0]}')
 plt.axis('off')
 plt.show()
 
 # Showing the second image from the reshaped data
 print("\nFirst image showed.")
-reshaped_first_sample = dataset.data[1].reshape(8,8)
+reshaped_first_sample = X[1].reshape(28,28)
 plt.figure(figsize=(4,4))
 plt.imshow(reshaped_first_sample, cmap='gray', interpolation='nearest')
-plt.title(f'Dígito: {dataset.target[1]}')
+plt.title(f'Dígito: {y[1]}')
 plt.axis('off')
 plt.show()
 
@@ -82,35 +90,29 @@ plt.show()
 # de dígito (0 a 9) tem um rótulo correspondente que indica qual número a imagem 
 # representa.
 
-# The target
-target = dataset.target
+# The target (usando subset y)
+target = y
 print("\nTarget: ", target)
 
 # Unique targets
-unique_target = np.unique(dataset.target)
+unique_target = np.unique(y)
 print("\nUnique Targets: ", unique_target)
 
 # Showing the 10th image from the reshaped data
 print("\n9 image showed.")
-reshaped_first_sample = dataset.data[9].reshape(8,8)
+reshaped_first_sample = X[9].reshape(28,28)
 plt.figure(figsize=(4,4))
 plt.imshow(reshaped_first_sample, cmap='gray', interpolation='nearest')
-plt.title(f'Dígito: {dataset.target[9]}')
+plt.title(f'Dígito: {y[9]}')
 plt.axis('off')
 plt.show()
 
 # target from the 10th number
-print(dataset.target[9])
+print(y[9])
 
-# Data Frame
-# O DataFrame é uma estrutura de dados bidimensional fornecida pela biblioteca Pandas, 
-# que permite armazenar e manipular dados de forma tabular. Neste caso, estamos criando 
-# um DataFrame a partir dos dados do conjunto de dígitos (dataset.data), onde cada linha 
-# representa uma amostra (imagem de dígito) e cada coluna representa uma característica 
-# (pixel da imagem). Os nomes das colunas são fornecidos por dataset.feature_names, 
-# que contém os rótulos correspondentes a cada pixel. Isso facilita a análise e 
-# manipulação dos dados, permitindo operações como filtragem, agregação e visualização.
-data_frame = pd.DataFrame(dataset.data, columns=dataset.feature_names)
+# Data Frame (gera nomes de colunas se não existirem)
+feature_names = [f"pixel_{r}_{c}" for r in range(28) for c in range(28)]
+data_frame = pd.DataFrame(X, columns=feature_names)
 print("\nData Frame: ", data_frame)
 
 # Data frame object
@@ -126,8 +128,9 @@ print("\nDescribe: ", data_frame.describe())
 # A variável y contém os rótulos (targets) associados a cada imagem, que indicam qual número (0 a 9) 
 # cada imagem representa. Esses rótulos são usados para treinar o modelo de aprendizado de máquina, 
 # permitindo que ele aprenda a associar as características das imagens (x) aos seus respectivos números (y).
+# x já contém DataFrame com X (subset) e y já foi definido pelo subset acima
 x = data_frame
-y = dataset.target
+# y definido mais acima
 
 print("\nX and Y: ", x, y)
 
