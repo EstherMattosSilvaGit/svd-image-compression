@@ -3,6 +3,11 @@ from sklearn.datasets import load_digits
 from matplotlib import pyplot as plt
 import numpy as np
 from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+
+#Essa parte agora vamos ter que fazer na mao, mas esta aqui pra sabermos como funciona mais ou menos
+from sklearn.decomposition import PCA
 
 
 # Load the dataset using the load digits function
@@ -82,8 +87,38 @@ y = dataset.target
 print("\nX and Y: ", x, y)
 
 
-# Using the sklearn library before traingin the model
+# Using the sklearn library before building my machine learn model
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(x)
 
 print("\nX Scaled: ", X_scaled)
+
+# train the split
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=30)
+
+model = LogisticRegression()
+model.fit(X_train, y_train)
+accuracy = model.score(X_test, y_test)
+
+print("\nAccuracy: ", accuracy)
+
+# Give me retain 95% of information
+pca = PCA(0.95)
+X_pca = pca.fit_transform(x)
+# Diminuiu a quantidade de colunas para 29
+print("\nShape: ", X_pca.shape)
+
+# Calcula colunas
+print("\nX_pca: ", X_pca)
+
+# Explained varianca ratio: porcentagem de variacao para cada item
+print("\nExplained variance ratio: ", pca.explained_variance_ratio_)
+
+#Components number
+print("\nComponents: ", pca.n_components_)
+
+#Podemos usar esse novo data frame para treinar nosso model
+X_train_pca, X_test_pca, y_train_pca, y_test_pca = train_test_split(X_pca, y, test_size=0.2, random_state=30)
+model = LogisticRegression(max_iter=1000)
+model.fit(X_train_pca, y_train_pca)
+print("\nScore Pca: ", model.score(X_test_pca, y_test_pca))
