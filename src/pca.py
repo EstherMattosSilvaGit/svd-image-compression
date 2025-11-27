@@ -122,3 +122,18 @@ X_train_pca, X_test_pca, y_train_pca, y_test_pca = train_test_split(X_pca, y, te
 model = LogisticRegression(max_iter=1000)
 model.fit(X_train_pca, y_train_pca)
 print("\nScore Pca: ", model.score(X_test_pca, y_test_pca))
+
+#Create PCA by supplying the components explicity
+
+pca = PCA(n_components=2)
+X_pca = pca.fit_transform(x)
+print("\nShape pca: ", X_pca.shape)
+print("\nDataframe pca: ", X_pca)
+print("\nExplained variance ratio pca: ", pca.explained_variance_ratio_)
+
+# Usando apos treinar o codigo
+X_train_pca, X_test_pca, y_train_pca, y_test_pca = train_test_split(X_pca, y, test_size=0.2, random_state=30)
+model = LogisticRegression(max_iter=1000)
+model.fit(X_train_pca, y_train_pca)
+# Como podemos ver reduziu bastante
+print("\nScore Pca: ", model.score(X_test_pca, y_test_pca))
