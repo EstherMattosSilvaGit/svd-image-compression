@@ -1,85 +1,75 @@
-# 🧮 PAC – Image Compression using SVD / Compressão de Imagens usando SVD
+# Técnicas de Redução de Dimensionalidade — PCA aplicado ao MNIST
 
-This repository contains a small project for image compression using Singular Value Decomposition (SVD).
+Autores:
+- Esther Mattos - esthermattos@id.uff.br
+- Talisson Souza - talisedu@gmail.com
 
-Use the links below to jump directly to the English or Portuguese version of this README.
+Professor:
+- Dr. Marcos Lage - mlage@ic.uff.br
 
-- [English](#english)
-- [Português (BR)](#portuguese)
+Resumo:
+Este projeto demonstra o uso do Principal Component Analysis (PCA) como técnica de redução de dimensionalidade aplicada a imagens do dataset MNIST. Implementamos PCA manualmente usando apenas numpy e matplotlib para visualização, sem bibliotecas de alto nível (ex: sklearn), para que o professor possa inspecionar os passos de Álgebra Linear.
 
----
+Palavras-chave: Visão Computacional, PCA, Imagens, Redução de Dimensionalidade
 
-## English
+Conteúdo do repositório:
+- `src/pca_mnist.py`: Script principal que baixa e carrega MNIST, executa PCA via SVD, projeta e reconstrói imagens, gera métricas (MSE) e visualizações.
+- `requirements.txt`: Dependências mínimas (numpy, matplotlib).
 
-### Overview
+Como usar:
+1. Clone o repositório.
+2. Instale dependências (recomendado em um ambiente virtual):
 
-This project demonstrates how Singular Value Decomposition (SVD) can be used to compress grayscale images by representing an image as a matrix and reconstructing it using only the k largest singular values. The implementation emphasizes manual linear algebra operations to match the goals of a Computational Linear Algebra course (PAC).
+```powershell
+python -m venv .venv; .\.venv\Scripts\activate; pip install -r requirements.txt
+```
 
-### Goal
+3. Execute o script:
 
-Implement SVD-based compression to trade off between compression ratio and visual quality by reconstructing an image using only the top-k singular values.
+```powershell
+python src\pca_mnist.py --help
+```
 
-### Steps
+O script baixará automaticamente o MNIST (se necessário), calculará componentes principais, fará compressão e reconstrução para uma lista de valores k (número de componentes) e gerará gráficos:
+- Gráfico da variância explicada acumulada (para todas as componentes)
+- Mosaico de imagens originais e reconstruídas para comparar (k em [10, 20, 50, 100])
+- Projeção 2D das imagens (primeiros 2 componentes) com cores por classe
 
-1. Read and convert an image to a numeric matrix (grayscale).
-2. Implement linear algebra operations manually (matrix multiplication, diagonal matrix creation, norm calculation).
-3. Compute SVD and reconstruct the image with different k values (e.g. 5, 20, 50, 100).
-4. Display the original and reconstructed images and a plot of reconstruction error using Matplotlib.
+Modo de teste rápido (sem download):
+```powershell
+# Executa um demo sintético para testar implementação (NumPy e Pure)
+python src\pca_mnist.py --quicktest --max-samples 200 --k 5 10 20
+```
 
-### Libraries
+Metodologia (resumo):
+- Carrega MNIST dos arquivos IDX oficiais
+- Converte imagens para vetores (784 dimensões)
+- Centraliza dados pela média
+- Calcula SVD em X_centered (numpy.linalg.svd)
+- Seleciona componentes principais para projeção e reconstrução
+- Avalia reconstrução por MSE e visualização
 
-• Pillow (PIL) — image I/O and conversion
-• NumPy — image array handling (limited use; core linear algebra implemented manually)
-• Matplotlib — visualization
-• math / builtins — basic numerical operations
+Matemática (resumo):
+- Dados: X ∈ R^{N×D}. Seja μ = (1/N) ∑_i x_i a média por coluna.
+- Dados centralizados: X_c = X − μ.
+- SVD em X_c: X_c = U Σ V^T. As linhas de V^T (ou colunas de V) representam os autovetores (componentes principais).
+- Projeção k componentes: scores = X_c V_k^T (onde V_k^T ∈ R^{k×D}). Reconstrução: X_approx = scores V_k + μ.
+- Variância explicada por cada componente: λ_j = Σ_j^2 / (N − 1).
 
-> Note: Core linear algebra routines (multiplication, diag creation, norms) are implemented by hand for learning purposes.
+Outputs:
+- `outputs/explained_variance_cumulative_full.png` — variância explicada cumulativa por todas as componentes.
+- `outputs/explained_variance_k_{k}.png` — variância explicada até o k usado.
+- `outputs/plots_k_{k}.png` — mosaico com originais e reconstruções para cada k.
+- `outputs/proj_2d_k_{k}.png` — projeção 2D.
+- `outputs/mse_results.csv` — tabela com MSE por k.
 
-### Expected Results
+Observações:
+- O foco é didático: aqui implementamos PCA via SVD apenas com numpy para mostrar cada passo.
+- Se você quiser usar somente uma parte do dataset para testar (por exemplo 5000 imagens) use a flag `--max-samples`.
+- Se desejar ver a implementação didática sem NumPy (muito lenta, apenas para fins educacionais), utilize a flag `--pure-python`. Recomenda-se `--max-samples 200` ou menos nesse modo.
 
-• Side-by-side images showing the original and reconstructions for different k values.
-• A plot showing reconstruction error vs k.
+Licença: ATENÇÃO — Trabalho acadêmico; sinta-se à vontade para adaptar e citar.
 
----
-
-<a id="portuguese"></a>
-## Português (BR)
-
-### Visão geral
-
-Este projeto demonstra como a Decomposição em Valores Singulares (SVD) pode ser usada para comprimir imagens em escala de cinza, representando a imagem como uma matriz e reconstruindo-a usando apenas os k maiores valores singulares. A implementação enfatiza operações de álgebra linear feitas manualmente, alinhadas ao objetivo da disciplina de Processamento de Álgebra Computacional (PAC).
-
-### Objetivo
-
-Implementar a compressão baseada em SVD para demonstrar o trade-off entre razão de compressão e qualidade visual, reconstruindo a imagem com apenas os top-k valores singulares.
-
-### Etapas
-
-1. Leitura e conversão da imagem para matriz numérica (tons de cinza).
-2. Implementação manual das operações de Álgebra Linear (multiplicação de matrizes, criação de matriz diagonal, cálculo de norma).
-3. Cálculo da SVD e reconstrução da imagem com diferentes valores de k (ex.: 5, 20, 50, 100).
-4. Exibição da imagem original e das reconstruções e um gráfico de erro de reconstrução usando Matplotlib.
-
-### Bibliotecas
-
-• Pillow (PIL) — leitura e conversão de imagem
-• NumPy — manipulação de arrays de imagem (uso limitado; as rotinas principais são manuais)
-• Matplotlib — visualização
-• math / builtins — operações numéricas básicas
-
-> Observação: As rotinas principais de álgebra linear foram implementadas manualmente para fins didáticos.
-
-### Resultados Esperados
-
-• Imagens lado a lado: original e reconstruções para diferentes k.
-• Gráfico com o erro de reconstrução em função de k.
-
----
-
-## Authors / Autoria
-
-• Esther Mattos
-• Thalisson Souza
-
-Universidade — 2025
-
+Referências:
+- C.M. Bishop, Pattern Recognition and Machine Learning. Springer, 2006.
+- L. van der Maaten, E. Postma, and J. van den Herik, Dimensionality reduction: A comparative, J. Mach. Learn. Res., 2009.
