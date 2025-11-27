@@ -5,6 +5,18 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 
+# Links de pesquisa:
+# https://youtu.be/cOCeXgMKrY8
+# http://www2.ic.uff.br/~aconci/PCA-ACP.pdf
+# https://www.datageeks.com.br/analise-de-componentes-principais
+# https://www.datacamp.com/pt/tutorial/pca-analysis-r
+# https://pt.wikipedia.org/wiki/Análise_de_componentes_principais
+# https://www.ime.unicamp.br/~cnaber/aula_ACP_Ana_Multi_2S_2020.pdf
+# https://www.ibm.com/br-pt/think/topics/principal-component-analysis
+# https://statplace.com.br/blog/analise-de-componentes-principais
+# https://www.unievangelica.edu.br/gc/imagens/file/mestrados/artigos/RTINF_003092.pdf
+# https://numpy.org/doc/stable/reference/generated/numpy.reshape.html
+
 # Regressão logística﻿ é um jeito de prever respostas que têm só duas possibilidades, 
 # tipo "sim" ou "não", usando um conjunto de informações. Imagine que você quer saber 
 # se uma pessoa vai comprar um produto (sim ou não), o modelo﻿ vai analisar 
@@ -145,6 +157,44 @@ accuracy = model.score(X_test, y_test)
 
 print("\nAccuracy: ", accuracy)
 
+#Aplicando pca manualmente
+# Passos para Calcular PCA Manualmente
+# O PCA manual segue estes passos principais: centralizar os dados 
+# (subtrair a média), calcular a matriz de covariância, encontrar autovalores e 
+# autovetores, selecionar os principais componentes e projetar os dados.​
+
+# 1. Centralizar os dados (média = 0)
+scaler = StandardScaler()
+X_centered = scaler.fit_transform(x)
+
+# 2. Matriz de covariância
+cov_matrix = np.cov(X_centered.T)
+
+# 3. Autovalores e autovetores
+eigenvalues, eigenvectors = np.linalg.eig(cov_matrix)
+
+# 4. Ordenar por autovalores (maior primeiro)
+idx = eigenvalues.argsort()[::-1]
+eigenvalues = eigenvalues[idx]
+eigenvectors = eigenvectors[:, idx]
+
+# 5. Selecionar componentes que mantêm 95% da variância
+total_var = np.sum(eigenvalues)
+cum_var = np.cumsum(eigenvalues / total_var)
+n_components = np.argmax(cum_var >= 0.95) + 1
+
+# 6. Matriz de projeção (primeiros n_components)
+projection_matrix = eigenvectors[:, :n_components]
+
+# 7. Transformar dados (equivalente a pca.fit_transform)
+X_pca = X_centered.dot(projection_matrix)
+
+print("Shape:", X_pca.shape)
+print("Explained variance ratio:", eigenvalues[:n_components] / total_var)
+print("Components:", n_components)
+
+
+# Aplicando pca com a biblioteca para comparação
 # Por fim, aplicamos PCA (Análise de Componentes Principais) para reduzir a 
 # dimensionalidade dos dados, mantendo 95% da informação original. Isso ajuda 
 # a simplificar o modelo e pode melhorar o desempenho.
@@ -166,6 +216,11 @@ print("\nExplained variance ratio: ", pca.explained_variance_ratio_)
 
 #Components number
 print("\nComponents: ", pca.n_components_)
+
+
+# Comparar resultados
+print("Sklearn components:", pca_sklearn.n_components_)
+print("Shapes iguais?", X_pca.shape == X_pca_sklearn.shape)
 
 # Podemos usar esse novo DataFrame reduzido (X_pca) para treinar nosso modelo.
 # Aqui, dividimos os dados reduzidos em conjuntos de treinamento e teste, 
