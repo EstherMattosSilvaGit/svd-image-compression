@@ -147,117 +147,131 @@ print("\nX Scaled: ", X_scaled)
 X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=30)
 
 # Criamos um modelo de Regressão Logística e o treinamos com os dados de treinamento.
-model = LogisticRegression()
-model.fit(X_train, y_train)
+model_raw = LogisticRegression()
+model_raw.fit(X_train, y_train)
 
 # Avaliamos a precisão do modelo usando o conjunto de teste. A precisão nos diz 
 # quão bem o modelo está se saindo em prever os rótulos corretos para os dados 
 # que não viu durante o treinamento.
-accuracy = model.score(X_test, y_test)
+accuracy_raw = model_raw.score(X_test, y_test)
 
-print("\nAccuracy: ", accuracy)
+print("\nAccuracy (raw / scaled features):", accuracy_raw)
 
-#Aplicando pca manualmente
-# Passos para Calcular PCA Manualmente
-# O PCA manual segue estes passos principais: centralizar os dados 
-# (subtrair a média), calcular a matriz de covariância, encontrar autovalores e 
-# autovetores, selecionar os principais componentes e projetar os dados.​
+# Aplicando PCA manualmente (covariância + autovalores/autovetores)
+# O PCA manual segue estes passos principais: centralizar os dados (se necessário),
+# calcular a matriz de covariância, encontrar autovalores e autovetores (eigen),
+# selecionar os principais componentes e projetar os dados.
 
-# 1. Centralizar os dados (média = 0)
-scaler = StandardScaler()
-X_centered = scaler.fit_transform(x)
+# Re-uso do X_scaled (já centrado pelo StandardScaler) para ter comparação justa
+X_centered = X_scaled
 
-# 2. Matriz de covariância
-cov_matrix = np.cov(X_centered.T)
+# 2. Matriz de covariância (usando rowvar=False para deixar colunas como variáveis)
+cov_matrix = np.cov(X_centered, rowvar=False)
 
-# 3. Autovalores e autovetores
-eigenvalues, eigenvectors = np.linalg.eig(cov_matrix)
+# 3. Autovalores e autovetores (usar eigh -- mais estável para matrizes simétricas)
+eigenvalues_all, eigenvectors_all = np.linalg.eigh(cov_matrix)
 
 # 4. Ordenar por autovalores (maior primeiro)
-idx = eigenvalues.argsort()[::-1]
-eigenvalues = eigenvalues[idx]
-eigenvectors = eigenvectors[:, idx]
+idx_all = eigenvalues_all.argsort()[::-1]
+eigenvalues_all = eigenvalues_all[idx_all]
+eigenvectors_all = eigenvectors_all[:, idx_all]
 
 # 5. Selecionar componentes que mantêm 95% da variância
-total_var = np.sum(eigenvalues)
-cum_var = np.cumsum(eigenvalues / total_var)
-n_components = np.argmax(cum_var >= 0.95) + 1
+total_var_manual = np.sum(eigenvalues_all)
+cum_var_manual = np.cumsum(eigenvalues_all / total_var_manual)
+num_components_manual = int(np.argmax(cum_var_manual >= 0.95) + 1)
 
-# 6. Matriz de projeção (primeiros n_components)
-projection_matrix = eigenvectors[:, :n_components]
+# 6. Matriz de projeção (primeiros num_components_manual vectores)
+projection_matrix_manual = eigenvectors_all[:, :num_components_manual]
 
 # 7. Transformar dados (equivalente a pca.fit_transform)
-X_pca = X_centered.dot(projection_matrix)
+X_pca_manual = X_centered.dot(projection_matrix_manual)
 
-print("Shape:", X_pca.shape)
-print("Explained variance ratio:", eigenvalues[:n_components] / total_var)
-print("Components:", n_components)
+print("Manual PCA - Shape:", X_pca_manual.shape)
+print("Manual explained variance ratio:", eigenvalues_all[:num_components_manual] / total_var_manual)
+print("Manual Components:", num_components_manual)
 
-
-# Aplicando pca com a biblioteca para comparação
-# Por fim, aplicamos PCA (Análise de Componentes Principais) para reduzir a 
-# dimensionalidade dos dados, mantendo 95% da informação original. Isso ajuda 
-# a simplificar o modelo e pode melhorar o desempenho.
-pca = PCA(0.95)
-X_pca = pca.fit_transform(x)
-
-# Aqui, verificamos a nova forma dos dados após a redução de dimensionalidade, 
-# que agora tem menos colunas (características).
-print("\nShape: ", X_pca.shape)
-
-# Calcula colunas
-print("\nX_pca: ", X_pca)
-
-# Explained varianca ratio: porcentagem de variacao para cada item
-# A razão da variância explicada é uma métrica que indica a quantidade 
-# de variância nos dados originais que é capturada por cada componente 
-# principal após a aplicação da Análise de Componentes Principais (PCA).
-print("\nExplained variance ratio: ", pca.explained_variance_ratio_)
-
-#Components number
-print("\nComponents: ", pca.n_components_)
+eigenvalues_manual = eigenvalues_all
+eigenvectors_manual = eigenvectors_all
 
 
-# Comparar resultados
+# Aplicando PCA com a biblioteca (sklearn) para comparação
+# Observação: o sklearn PCA centraliza os dados por padrão. Usamos X_centered
+# (que já é X_scaled / centrado) para garantir que ambas as abordagens partam do
+# mesmo ponto.
+pca_sklearn = PCA(0.95)
+X_pca_sklearn = pca_sklearn.fit_transform(X_centered)
+
+print("\nSklearn PCA - Shape:", X_pca_sklearn.shape)
+print("\nX_pca_sklearn: ", X_pca_sklearn)
+print("\nSklearn explained variance ratio: ", pca_sklearn.explained_variance_ratio_)
+print("\nSklearn Components: ", pca_sklearn.n_components_)
+
+# Define X_pca for downstream compatibility (podemos usar X_pca_sklearn)
+X_pca = X_pca_sklearn
+
+# Comparativo entre manual e sklearn
+num_components_sklearn = pca_sklearn.n_components_
+min_components = min(num_components_manual, num_components_sklearn)
+
+explained_variance_ratio_manual = eigenvalues_all / total_var_manual
+print("\nNumber of components (manual):", num_components_manual)
+print("Number of components (sklearn):", num_components_sklearn)
+print("Shapes: manual X_pca", X_pca_manual.shape, "sklearn X_pca", X_pca_sklearn.shape)
+print("Explained variance (manual, first k):", explained_variance_ratio_manual[:min_components])
+print("Explained variance (sklearn, first k):", pca_sklearn.explained_variance_ratio_[:min_components])
+print("Cum. variance (manual, first k):", np.cumsum(explained_variance_ratio_manual[:min_components]))
+print("Cum. variance (sklearn, first k):", np.cumsum(pca_sklearn.explained_variance_ratio_[:min_components]))
+print("Explained variance close?", np.allclose(np.cumsum(explained_variance_ratio_manual[:min_components]), np.cumsum(pca_sklearn.explained_variance_ratio_[:min_components]), atol=1e-6))
+
+
+# Comparar resultados e reconstrução (MSE)
+print("\nComparação final:")
 print("Sklearn components:", pca_sklearn.n_components_)
-print("Shapes iguais?", X_pca.shape == X_pca_sklearn.shape)
+print("Manual components:", num_components_manual)
+print("Shapes: Manual X_pca", X_pca_manual.shape, "Sklearn X_pca", X_pca_sklearn.shape)
+
+# Reconstruções (voltar para o espaço original e comparar erro quadrático médio)
+X_recon_manual = X_pca_manual.dot(projection_matrix_manual.T)
+X_recon_sklearn = pca_sklearn.inverse_transform(X_pca_sklearn)
+
+mse_manual = np.mean((X_centered - X_recon_manual) ** 2)
+mse_sklearn = np.mean((X_centered - X_recon_sklearn) ** 2)
+
+print("MSE reconstrução (manual):", mse_manual)
+print("MSE reconstrução (sklearn):", mse_sklearn)
 
 # Podemos usar esse novo DataFrame reduzido (X_pca) para treinar nosso modelo.
 # Aqui, dividimos os dados reduzidos em conjuntos de treinamento e teste, 
 # onde 80% dos dados serão usados para treinar o modelo e 20% para testá-lo.
 X_train_pca, X_test_pca, y_train_pca, y_test_pca = train_test_split(X_pca, y, test_size=0.2, random_state=30)
 
-# Criamos um modelo de Regressão Logística com um número máximo de iterações definido.
-model = LogisticRegression(max_iter=1000)
+# Treinamento e avaliação em PCA preservando 95% da variância (sklearn PCA)
+model_pca95 = LogisticRegression(max_iter=1000)
+model_pca95.fit(X_train_pca, y_train_pca)
+score_pca95 = model_pca95.score(X_test_pca, y_test_pca)
+print(f"\nScore PCA (95% var, n_components={pca_sklearn.n_components_}): ", score_pca95)
 
-# Treinamos o modelo usando os dados de treinamento reduzidos.
-model.fit(X_train_pca, y_train_pca)
 
-# Avaliamos a precisão do modelo usando o conjunto de teste reduzido.
-# O score nos diz quão bem o modelo está se saindo em prever os rótulos corretos.
-print("\nScore Pca: ", model.score(X_test_pca, y_test_pca))
+# A seguir, criamos um PCA 2D para visualização e análise.
+# Usamos X_centered para manter consistência entre as abordagens.
+pca_2d = PCA(n_components=2)
+X_pca_2d = pca_2d.fit_transform(X_centered)
 
-# A seguir, criamos um novo PCA especificando o número de componentes que queremos.
-# Neste caso, estamos reduzindo os dados para 2 componentes principais.
-pca = PCA(n_components=2)
-X_pca = pca.fit_transform(x)
+print("\nShape pca 2D: ", X_pca_2d.shape)
+print("\nDataframe pca 2D: ", X_pca_2d)
+print("\nExplained variance ratio pca 2D: ", pca_2d.explained_variance_ratio_)
 
-# Mostramos a nova forma dos dados após a redução de dimensionalidade.
-print("\nShape pca: ", X_pca.shape)
+# Treinar um modelo simples usando as 2 componentes principais e medir acurácia
+X_train_2d, X_test_2d, y_train_2d, y_test_2d = train_test_split(X_pca_2d, y, test_size=0.2, random_state=30)
+model_pca2d = LogisticRegression(max_iter=1000)
+model_pca2d.fit(X_train_2d, y_train_2d)
+score_pca2d = model_pca2d.score(X_test_2d, y_test_2d)
+print("\nScore PCA 2D: ", score_pca2d)
 
-# Exibimos os dados transformados pelo PCA.
-print("\nDataframe pca: ", X_pca)
-
-# Mostramos a proporção da variância explicada por cada componente principal.
-print("\nExplained variance ratio pca: ", pca.explained_variance_ratio_)
-
-# Após treinar o modelo com os dados reduzidos, dividimos novamente os dados em 
-# conjuntos de treinamento e teste para avaliar o desempenho do modelo.
-X_train_pca, X_test_pca, y_train_pca, y_test_pca = train_test_split(X_pca, y, test_size=0.2, random_state=30)
-
-# Criamos e treinamos novamente o modelo de Regressão Logística.
-model = LogisticRegression(max_iter=1000)
-model.fit(X_train_pca, y_train_pca)
-
-# Avaliamos a precisão do modelo com os dados reduzidos.
-print("\nScore Pca: ", model.score(X_test_pca, y_test_pca))
+# (Observação: o treinamento do PCA 95% já foi feito acima com model_pca95)
+# Imprimimos um resumo com as métricas para facilitar a comparação.
+print("\nResumo final:")
+print("Accuracy (raw):", accuracy_raw)
+print(f"Accuracy (PCA 95%, n_components={pca_sklearn.n_components_}):", score_pca95)
+print(f"Accuracy (PCA 2D, n_components={pca_2d.n_components_}):", score_pca2d)
