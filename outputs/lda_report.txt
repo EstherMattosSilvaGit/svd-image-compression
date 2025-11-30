@@ -1,0 +1,78 @@
+LDA Analysis Report
+Generated: 2025-11-30T01:44:55.903563 UTC
+
+Dataset: MNIST (subset)
+Num samples used: 5000
+Feature size: 784 (flattened 28x28)
+
+Baseline (LogisticRegression on scaled features)
+ - Accuracy (raw/scaled): 0.882000
+
+LDA (manual)
+ - Components chosen (manual): 9
+ - Top eigenvalues (manual): [4.657411, 3.90936, 3.41329, 2.295965, 1.820875, 1.425595, 1.054054, 0.771798, 0.63042]
+ - MSE reconstruction (manual, scaled space): 0.82889580
+ - Accuracy (Logistic after manual LDA): 0.928000
+
+LDA (sklearn)
+ - Components chosen (sklearn): 9
+ - Accuracy (Logistic after sklearn LDA): 0.926000
+ - scalings_ (first 10 elements de cada componente): [[-0.0, -0.0, -0.0], [0.0, 0.0, -0.0], [-0.0, -0.0, 0.0], [0.0, 0.0, 0.0], [-0.0, -0.0, 0.0], [0.0, 0.0, -0.0], [-0.0, -0.0, 0.0], [-0.0, 0.0, 0.0], [0.0, 0.0, -0.0], [0.0, -0.0, -0.0]]
+
+Comparisons & Checks
+ - Shapes: manual X_lda=(5000, 9), sklearn X_lda=(5000, 9)
+
+Full stdout log:
+
+Iniciando pipeline LDA (MNIST subset)...
+
+Buscando MNIST (OpenML) — caso não esteja em cache, será baixado...
+
+Shape (subset): (5000, 784)
+
+DataFrame head:
+    pixel_0_0  pixel_0_1  pixel_0_2  ...  pixel_27_25  pixel_27_26  pixel_27_27
+0          0          0          0  ...            0            0            0
+1          0          0          0  ...            0            0            0
+2          0          0          0  ...            0            0            0
+3          0          0          0  ...            0            0            0
+4          0          0          0  ...            0            0            0
+
+[5 rows x 784 columns]
+
+X_scaled shape: (5000, 784)
+
+Baseline (LogisticRegression) accuracy: 0.882
+
+Número de classes: 10 Dimensão dos features: 784
+
+Médias de classe e média global calculadas.
+
+S_W shape: (784, 784) S_B shape: (784, 784)
+
+LDA manual - selected components (k): 9
+Top eigenvalues (LDA manual): [4.65741055 3.9093599  3.41328984 2.29596507 1.82087547 1.42559535
+ 1.05405428 0.77179763 0.63041952]
+X_lda_manual shape: (5000, 9)
+
+MSE de reconstrução (manual LDA, no espaço escalado): 0.8288957990706269
+
+LDA sklearn - X_lda_sklearn shape: (5000, 9)
+scalings_ (sklearn) shape: (784, 9)
+
+Accuracy (Logistic on LDA manual): 0.928
+Accuracy (Logistic on LDA sklearn): 0.926
+
+Comparações:
+k_lda: 9
+Shapes - X_lda_manual: (5000, 9) X_lda_sklearn: (5000, 9)
+Top eigenvalues (manual): [4.65741055 3.9093599  3.41328984 2.29596507 1.82087547 1.42559535
+ 1.05405428 0.77179763 0.63041952]
+Sklearn scalings (first 5 elements por componente):
+[[-0. -0. -0.]
+ [ 0.  0. -0.]
+ [-0. -0.  0.]
+ [ 0.  0.  0.]
+ [-0. -0.  0.]]
+
+Saved LDA component images to outputs/ (manual and sklearn).

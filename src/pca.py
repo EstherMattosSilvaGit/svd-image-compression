@@ -32,6 +32,39 @@ from sklearn.linear_model import LogisticRegression
 #Essa parte agora vamos ter que fazer na mao, mas esta aqui pra sabermos como funciona 
 # mais ou menos
 from sklearn.decomposition import PCA
+import sys
+import io
+
+
+# Small utility that duplicates stdout to both terminal and a buffer so we can
+# save everything printed to disk later. We set it early so all subsequent prints
+# are captured.
+class Tee:
+	def __init__(self, stdout, buffer):
+		self.stdout = stdout
+		self.buffer = buffer
+
+	def write(self, s):
+		# Write to terminal
+		self.stdout.write(s)
+		# Also write to the buffer (no newlines added)
+		self.buffer.write(s)
+
+	def flush(self):
+		try:
+			self.stdout.flush()
+		except Exception:
+			pass
+		try:
+			self.buffer.flush()
+		except Exception:
+			pass
+
+
+# set up capture
+_stdout_buf = io.StringIO()
+_tee = Tee(sys.stdout, _stdout_buf)
+sys.stdout = _tee
 
 
 # Carregar MNIST via OpenML (mais completo que load_digits)
@@ -278,3 +311,54 @@ print("\nResumo final:")
 print("Accuracy (raw):", accuracy_raw)
 print(f"Accuracy (PCA 95%, n_components={pca_sklearn.n_components_}):", score_pca95)
 print(f"Accuracy (PCA 2D, n_components={pca_2d.n_components_}):", score_pca2d)
+
+# --- Save a plain text report to outputs/pca_report.txt ---
+from pathlib import Path
+from datetime import datetime
+
+out_dir = Path(__file__).resolve().parent.parent / "outputs"
+out_dir.mkdir(parents=True, exist_ok=True)
+report_path = out_dir / "pca_report.txt"
+try:
+	with report_path.open("w", encoding="utf-8") as f:
+		f.write("PCA Analysis Report\n")
+		f.write(f"Generated: {datetime.utcnow().isoformat()} UTC\n\n")
+		f.write(f"Dataset: MNIST (subset)\n")
+		f.write(f"Num samples used: {X.shape[0]}\n")
+		f.write(f"Feature size: {X.shape[1]} (flattened 28x28)\n\n")
+
+		f.write("Baseline (LogisticRegression on scaled features)\n")
+		f.write(f" - Accuracy (raw/scaled): {accuracy_raw:.6f}\n\n")
+
+		f.write("PCA (manual)\n")
+		f.write(f" - Components chosen (manual): {num_components_manual}\n")
+		f.write(f" - MSE reconstruction (manual): {mse_manual:.8f}\n\n")
+
+		f.write("PCA (sklearn 95% variance)\n")
+		f.write(f" - Components chosen (sklearn): {pca_sklearn.n_components_}\n")
+		f.write(f" - Accuracy (logistic after PCA 95%): {score_pca95:.6f}\n")
+		f.write(f" - MSE reconstruction (sklearn): {mse_sklearn:.8f}\n")
+		f.write(f" - Explained variance ratio (first 10): {np.round(pca_sklearn.explained_variance_ratio_[:10], 6).tolist()}\n\n")
+
+		f.write("PCA 2D\n")
+		f.write(f" - Components: {pca_2d.n_components_}\n")
+		f.write(f" - Accuracy (logistic on 2D): {score_pca2d:.6f}\n")
+		f.write(f" - Explained variance ratio (2D): {np.round(pca_2d.explained_variance_ratio_, 6).tolist()}\n\n")
+
+		f.write("Comparisons & Checks\n")
+		f.write(f" - Manual vs sklearn #components: manual={num_components_manual}, sklearn={pca_sklearn.n_components_}\n")
+		f.write(f" - Shapes: manual X_pca={X_pca_manual.shape}, sklearn X_pca={X_pca_sklearn.shape}\n")
+		f.write(f" - Explained variance close? {np.allclose(np.cumsum(explained_variance_ratio_manual[:min_components]), np.cumsum(pca_sklearn.explained_variance_ratio_[:min_components]), atol=1e-6)}\n\n")
+
+		f.write("Note: Reconstructions and MSEs are computed in centered/scaled space. To view reconstructed images in original pixel scale, apply scaler.inverse_transform to the reconstructed arrays.\n")
+		# Add full captured stdout log
+		f.write("\nFull stdout log:\n")
+		try:
+			# _stdout_buf holds all printed output
+			full_log = _stdout_buf.getvalue()
+			f.write(full_log)
+		except Exception as e:
+			f.write(f"Failed to capture full log: {e}\n")
+	print(f"\nReport written to: {report_path}")
+except Exception as e:
+	print("Failed to write report:", e)
