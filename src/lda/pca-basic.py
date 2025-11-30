@@ -20,29 +20,29 @@ X_train, X_test, y_train, y_test = train_test_split(
 
 print(X_train.shape, X_test.shape)
 
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
+from sklearn.decomposition import PCA
 
-# 4. LDA com 2 componentes (no MNIST, max é 9, pois são 10 classes)
-lda = LDA(n_components=2)
+# 4. Para ficar leve, foi utilizado apenas 3000 amostras
+n_samples = 3000
+X_subset = X_train[:n_samples]
+y_subset = y_train[:n_samples]
 
-n_samples_lda = 3000
-X_sub_lda = X_train[:n_samples_lda]
-y_sub_lda = y_train[:n_samples_lda]
+# 5. PCA com 2 componentes
+pca = PCA(n_components=2)
+X_pca = pca.fit_transform(X_subset)
 
-X_lda = lda.fit_transform(X_sub_lda, y_sub_lda)
-
-print("Formato após LDA:", X_lda.shape)
+print("Formato após PCA:", X_pca.shape)
 
 plt.figure(figsize=(6, 5))
 
 scatter = plt.scatter(
-    X_lda[:, 0], X_lda[:, 1],
-    c=y_sub_lda, cmap='tab10', s=10, alpha=0.7
+    X_pca[:, 0], X_pca[:, 1],
+    c=y_subset, cmap='tab10', s=10, alpha=0.7
 )
 
-plt.xlabel("LD1")
-plt.ylabel("LD2")
-plt.title("MNIST projetado em 2D com LDA")
+plt.xlabel("PC1")
+plt.ylabel("PC2")
+plt.title("MNIST projetado em 2D com PCA")
 plt.colorbar(scatter, label="Dígito")
 plt.tight_layout()
 plt.show()
